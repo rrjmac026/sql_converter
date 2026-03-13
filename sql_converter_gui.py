@@ -7,6 +7,17 @@ import os
 import time
 
 
+# ── College Map (acronym → college_id from CollegeSeeder) ───────
+COLLEGE_MAP = {
+    'CON':  1,
+    'COT':  2,
+    'CAS':  3,
+    'CPAG': 4,
+    'COB':  5,
+    'COE':  6,
+}
+EMAIL_DOMAIN = "@student.buksu.edu.ph"
+
 # ── Theme Colors ────────────────────────────────────────────────
 BG        = "#0f1117"
 BG2       = "#1a1d27"
@@ -290,7 +301,7 @@ class SQLConverterApp(tk.Tk):
         try:
             start = time.time()
             self._log("📥  Reading Excel file…", "blue")
-            df = pd.read_excel(self.input_file.get(), dtype={'student number': str})
+            df = pd.read_excel(self.input_file.get(), dtype={'student_number': str})
             total      = len(df)
             chunk_size = self.chunk_size.get()
             num_files  = math.ceil(total / chunk_size)
@@ -318,18 +329,23 @@ class SQLConverterApp(tk.Tk):
                     f.write(
                         f"INSERT INTO `{table}` "
                         f"(`student_number`, `last_name`, `first_name`, `middle_name`, "
-                        f"`sex`, `college`, `course`, `year_level`, `role`, `status`) VALUES\n"
+                        f"`email`, `sex`, `college_id`, `course`, `year_level`, `role`, `status`) VALUES\n"
                     )
                     rows = []
                     for _, row in chunk.iterrows():
-                        yr = str(int(row['year level'])) if pd.notna(row['year level']) else None
+                        yr         = str(int(row['year level'])) if pd.notna(row['year level']) else None
+                        stud_num   = str(row['student_number']).strip()
+                        email      = f"{stud_num}{EMAIL_DOMAIN}"
+                        acr        = str(row['college']).strip().upper()
+                        college_id = COLLEGE_MAP.get(acr, 'NULL')
                         vals = (
-                            esc(row['student number']),
-                            esc(row['last Name']),
-                            esc(row['first Name']),
-                            esc(row['middle Name']),
+                            esc(stud_num),
+                            esc(row['last name']),
+                            esc(row['first name']),
+                            esc(row['middle name']),
+                            esc(email),
                             esc(row['sex']),
-                            esc(row['college']),
+                            str(college_id),
                             esc(row['course']),
                             esc(yr),
                             f"'{role}'",
@@ -363,4 +379,3 @@ class SQLConverterApp(tk.Tk):
 if __name__ == "__main__":
     app = SQLConverterApp()
     app.mainloop()
-#Run python sql_converter_gui.py
